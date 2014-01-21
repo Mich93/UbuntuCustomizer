@@ -182,9 +182,12 @@ resumeFrom enableRepo customizeMenu
         0)
           sudo chroot ~/liveubuntu/custom sudo apt-get install libqt4-dbus libqt4-network libqt4-xml libasound2
           sudo chroot ~/liveubuntu/custom sudo dpkg --configure -a
-          echo deb http://archive.ubuntu.com/ubuntu precise main universe restricted multiverse | sudo tee -a ~/liveubuntu/custom/etc/apt/sources.list
-          echo deb http://archive.ubuntu.com/ubuntu precise universe | sudo tee -a ~/liveubuntu/custom/etc/apt/sources.list
-          sudo chroot ~/liveubuntu/custom sudo apt-get update
+          echo deb http://archive.ubuntu.com/ubu
+ntu/ precise main universe restricted multiverse | sudo tee -a ~/liveubuntu/custom/etc/apt/sources.list
+
+
+          echo deb http://archive.ubuntu.com/ubuntu/ precise universe | sudo tee -a ~/liveubuntu/custom/etc/apt/sources.list
+          sudo chroot ~/liveubuntu/custom sudo apt-get update && sudo apt-get upgrade
           if [ $? == 0 ]
            then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The repository has been enabled succesfully" 5 50
           else
@@ -207,7 +210,7 @@ resumeFrom enableRepo customizeMenu
          ;;
     
        esac
-dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Well done! We are now ready for customize Ubuntu. \nClick Ok to continue with the customization" 8 80
+dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Well done! We are now ready for customizing Ubuntu. \nClick Ok to continue with the customization" 8 80
 customizeMenu
 }
 
@@ -227,7 +230,7 @@ case $? in
           if [ $? == 1 ]
             then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The game packages has been removed." 5 50
           else 
-             dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while removing the games. \nDo you want to try again?" 8 70
+             dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "Error" --yesno "There has been an error while removing the games. \nDo you want to try again?" 8 70
             case $? in
              0)
                removeGame 
@@ -293,12 +296,13 @@ function installEclipse(){
 customizeMenu
 }
 function installScribes(){
-  resumeFrom installScribes addFirefoxPlugin 
+  
   dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "install Scribes" --yesno "The process will now install the scribes text editor. \nDo you want to proceed?" 8 70
   case $? in
        0)
         echo 'Downloading scribes'
-        sudo chroot ~/liveubuntu/custom sudo wget http://launchpad.net/scribes/0.4/scribes-milestone1/+download/scribes-0.4-dev-build954.tar.bz2
+        cd ~/liveubuntu/custom
+        sudo wget http://launchpad.net/scribes/0.4/scribes-milestone1/+download/scribes-0.4-dev-build954.tar.bz2
         if [ $? == 0 ]
             then echo 'Extracting and installing scribes'
                   sudo chroot ~/liveubuntu/custom sudo tar xjf scribes-0.4-dev-build954.tar.bz2
@@ -342,6 +346,9 @@ function installScribes(){
        1)
           exitMenu installScribes
          ;;
+       255)
+         exitMenu installScribes
+         ;;
     
        esac
     
@@ -384,25 +391,47 @@ function addPackage(){
   case $? in
        0)
         dialog --backtitle 'Ubuntu 12.04 Customization' --title "install a package" --inputbox "Enter a package name." 8 70 2> $choose
-        PACKAGE=$(< $choose) 
-        sudo chroot ~/liveubuntu/custom sudo apt-get install $PACKAGE
         if [ $? == 0 ]
-            then echo 'The package $PACKAGE has been installed succesfully'
-        else
-            dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while installing the package. \nDo you want to try again?" 8 70
+            then PACKAGE=$(< $choose)
+        else exitMenu addPackage
+        fi
+        sudo chroot ~/liveubuntu/custom sudo dpkg --get-selections | grep -v deinstall | grep $PACKAGE
+        if [ $? == 0 ]
+            then dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "The package is already installed. \nDo you want to try with another one ?" 8 70
             case $? in
              0)
-               addFirefoxPlugin 
+               addPackage
              ;;
              1)
-               exitMenu addFirefoxPlugin
+               exitMenu addPackage
              ;;
     
              esac
-            
+        else 
+           sudo chroot ~/liveubuntu/custom sudo apt-get install $PACKAGE
+           if [ $? == 0 ]
+              then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The package has been removed succesfully." 8 80
+           else
+              dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while installing the package. \nDo you want to try again?" 8 70
+            case $? in
+             0)
+               addPackage 
+             ;;
+             1)
+               exitMenu addPackage
+             ;;
+             255)
+               exitMenu addPackage
+             ;;
+    
+             esac
+            fi
         fi
          ;;
        1)
+          exitMenu addPackage
+         ;;
+       255)
           exitMenu addPackage
          ;;
     
@@ -416,13 +445,16 @@ function removePackage(){
   case $? in
        0)
         dialog --backtitle 'Ubuntu 12.04 Customization' --title "install a package" --inputbox "Enter a package name." 8 70 2> $choose
-        rmPACKAGE=$(< $choose)
+        if [ $? == 0 ]
+            then rmPACKAGE=$(< $choose)
+        else exitMenu removePackage
+        fi
         
         sudo chroot ~/liveubuntu/custom sudo dpkg --get-selections | grep -v deinstall | grep $rmPACKAGE
         if [ $? == 0 ]
             then sudo chroot ~/liveubuntu/custom sudo apt-get remove --purge --assume-yes $rmPACKAGE
                 if [ $? == 0 ]
-                   then echo 'The package $rmPACKAGE has been removed succesfully'
+                   then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The package has been removed succesfully." 8 80
                 else
                    dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while removing the package. \nDo you want to try again?" 8 70
                      case $? in
@@ -432,6 +464,9 @@ function removePackage(){
                         1)
                         exitMenu removePackage
                         ;;
+                        255)
+                        exitMenu removePackage
+                         ;;
     
                         esac
             
@@ -445,14 +480,16 @@ function removePackage(){
              1)
                exitMenu removePackage
              ;;
-    
+              255)
+               exitMenu removePackage
+              ;;
              esac
          fi
         
         
          ;;
        1)
-          exitMenu addPackage
+          exitMenu removePackage
          ;;
     
        esac
@@ -467,7 +504,7 @@ function addWireshark(){
         echo 'Downloading and installing the wireshark'
         sudo chroot ~/liveubuntu/custom sudo apt-get install wireshark
         if [ $? == 0 ]
-            then echo 'Wireshark has been installed succesfully'
+            then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Wireshark network toll has been installed succesfully." 8 80
         else
             dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while installing wireshark. \nDo you want to try again?" 8 70
             case $? in
@@ -477,6 +514,10 @@ function addWireshark(){
              1)
                exitMenu addWireshark
              ;;
+             255)
+               exitMenu addWireshark
+             ;;
+                            
     
              esac
             
@@ -485,7 +526,10 @@ function addWireshark(){
        1)
           exitMenu addWireshark
          ;;
-    
+       255)
+           exitMenu addWireshark          
+         ;;
+                  
        esac
     
 customizeMenu
@@ -496,41 +540,36 @@ function changeBack(){
             
       case $? in
         0)
-          IMAGE=$(dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "Select an image to set as background" --fselect "home/" 8 60)
-          echo $IMAGE 
-          if [ -f "$IMAGE" ]
-             then sudo chroot ~/liveubuntu/custom sudo gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.defaults --set -t string /desktop/gnome/background$IMAGE /usr/share/backgrounds$IMAGE
-           if [ $? == 0 ]
-            then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The backgroung has been changed." 8 80
-           else
-            dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while changing the background. \nDo you want to try again?" 8 70
-            case $? in
-             0)
-               changeBack 
-             ;;
-             1)
-               exitMenu changeBack
-             ;;
-    
-             esac
+          choose=$(dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "Select an image to set as background" --fselect "/home/stefano/Scaricati/" 8 60)
+           dialog --backtitle "Ubuntu 12.04 Customization" --title "Clean" --clear --msgbox "$choose" 7 70
+          if [ $? == 0 ]
+            then   sudo chroot ~/liveubuntu/custom sudo gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.defaults --set -t string /desktop/gnome/background$choose /usr/share/backgrounds$choose
+               if [ $? == 0 ]
+                  then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The backgroung has been changed." 8 80
+               else
+                      dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while changing the background. \nDo you want to try again?" 8 70
+                   case $? in
+                     0)
+                     changeBack 
+                     ;;
+                     1)
+                     exitMenu changeBack
+                     ;;
+                     255)
+                     exitMenu changeBack
+                     ;;
+        
+                     esac
             
-            fi
-         else
-            dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "The file you selected is not valid \nDo you want to try again?" 8 70
-            case $? in
-             0)
-               changeBack 
-             ;;
-             1)
-               exitMenu changeBack
-             ;;
-    
-             esac
-            
-            
+                 fi
+          else exitMenu changeBack
           fi
+          
          ;;
        1)
+          exitMenu changeBack
+         ;;
+       255)
           exitMenu changeBack
          ;;
     
@@ -553,24 +592,52 @@ function clean() {
   setupIso
 }
 function setupIso() {
-dialog --backtitle "Ubuntu 12.04 Customization" --title "Clean" --clear --msgbox "The process will now setup the new customized ISO file" 5 50
-sudo chmod +w ~/liveubuntu/cd/casper/filesystem.manifest
-check setupIso
-sudo chroot ~/liveubuntu/custom sudo dpkg-query -W --showformat='${Package} ${Version}\n' > ~/liveubuntu/cd/casper/filesystem.manifest
-check setupIso
-sudo cp ~/liveubuntu/cd/casper/filesystem.manifest ~/liveubuntu/cd/casper/filesystem.manifest-desktop
-check setupIso
-sudo mksquashfs ~/liveubuntu/custom ~/liveubuntu/cd/casper/filesystem.squashfs
-check setupIso
-sudo rm ~/liveubuntu/cd/md5sum.txt
-check setupIso
-sudo -s (cd ~/liveubuntu/cd && find . -type f -print0 | xargs -0 md5sum > md5sum.txt)
-check setupIso
+   dialog --backtitle "Ubuntu 12.04 Customization" --title "Clean" --clear --msgbox "The process will now setup the new customized ISO file" 5 50
+   sudo chmod +w ~/liveubuntu/cd/casper/filesystem.manifest
+   check setupIso
+   sudo chroot ~/liveubuntu/custom sudo dpkg-query -W --showformat='${Package} ${Version}\n' > ~/liveubuntu/cd/casper/filesystem.manifest
+   check setupIso
+   sudo cp ~/liveubuntu/cd/casper/filesystem.manifest ~/liveubuntu/cd/casper/filesystem.manifest-desktop
+   check setupIso
+   sudo mksquashfs ~/liveubuntu/custom ~/liveubuntu/cd/casper/filesystem.squashfs
+   check setupIso
+   sudo rm ~/liveubuntu/cd/md5sum.txt
+   check setupIso
+   cd ~/liveubuntu/cd/
+   find . -type f -print0 | xargs -0 md5sum > md5sum.txt
+   check setupIso
+   dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The new ISO has been set up correctly. \nClick OK to  continue with the creation of the ISO" 7 70
+  createIso
 }
 
+
+function createIso() {
+   dialog --backtitle "Ubuntu 12.04 Customization" --title "ISO creation" --clear --msgbox "The process will now let you create the new customized ISO file" 6 60
+   dialog --backtitle 'Ubuntu 12.04 Customization' --title "Name the ISO" --inputbox "Enter your username." 8 70 2> $choose
+        if [ $? == 0 ]
+            then USER=$(< $choose)
+        else exitFrom createIso
+        fi
+   dialog --backtitle 'Ubuntu 12.04 Customization' --title "Name the ISO" --inputbox "Enter the name for your new ISO." 8 70 2> $choose
+        if [ $? == 0 ]
+            then ISO=$(< $choose)
+        else exitFrom createIso
+        fi
+        
+   cd ~/liveubuntu/cd/
+   check setupIso
+   sudo mkisofs -r -V "Ubuntu-Live-$USER" -b isolinux/isolinux.bin -c isolinux/boot.cat -cache-inodes -J -l
+-no-emul-boot -boot-load-size 4 -boot-info-table -o ~/Downloads/ubuntu-12.04-$ISO-amd64.iso
+   dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The new ISO has been created correctly. " 7 70
+}
+
+
 function customizeMenu() {
-dialog --backtitle 'Ubuntu 12.04 Customization' --title "Choose an option" --menu "Choose a task or end the customization." 14 65 6 1 "Remove games" 2 "Install eclipse" 3 "Install scribes editor" 4 "Install flash-plugin for Firefox" 5 "Install wireshark network tool" 6 "Install a package" 7 "Remove a package" 8 "Change default background" 9 "End customization" 2> $choose
-     WHAT=$(< $choose)
+   dialog --backtitle 'Ubuntu 12.04 Customization' --title "Choose an option" --menu "Choose a task or end the customization." 14 65 6 1 "Remove games" 2 "Install eclipse" 3 "Install scribes editor" 4 "Install flash-plugin for Firefox" 5 "Install wireshark network tool" 6 "Install a package" 7 "Remove a package" 8 "Change default background" 9 "End customization" 2> $choose
+     if [ $? == 0 ]
+            then WHAT=$(< $choose)
+        else exitFrom customizeMenu
+        fi
      case $WHAT in
        1) removeGame ;;
        2) installEclipse ;;
@@ -589,9 +656,9 @@ esac
 
 #Procedure to exit from any process whenever the user wants to 
 function exitFrom(){
-if test $? -ne 0   
+   if test $? -ne 0   
          then 
-            dialog --backtitle "Ubuntu 12.04 Customization" --title "ERROR" --clear --yesno "Do you really want to exit?" 6 60
+          dialog --backtitle "Ubuntu 12.04 Customization" --title "ERROR" --clear --yesno "Do you really want to exit?" 6 60
             case $? in
             0)
             dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Goodbye :-)" 5 50
@@ -682,7 +749,7 @@ function log(){
 }
 
 
-clean
+welcome
 exit 0
 
 
