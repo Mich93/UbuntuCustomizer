@@ -607,8 +607,11 @@ function createIso() {
         else exitFrom createIso
         fi
         
-   cd ~/$fold/cd && sudo mkisofs -r -V "Ubuntu-$USER" -b isolinux/isolinux.bin -c isolinux/boot.cat -cache-inodes -J -l -no-emul-boot -boot-load-size 4 -boot-info-table -o ~/Ubuntu-$ISO.iso .
-    check createIso
+   cd ~/$fold/cd/
+   check setupIso
+   sudo mkisofs -r -V "Ubuntu-Live-$USER" -b isolinux/isolinux.bin -c isolinux/boot.cat -cache-inodes -J -l
+-no-emul-boot -boot-load-size 4 -boot-info-table -o ~/ubuntu-12.04-$ISO-amd64.iso
+    sudo mkisofs -r -V "Ubuntu-$USER" -b isolinux/isolinux.bin -c isolinux/boot.cat -cache-inodes -J -l -no-emul-boot -boot-load-size 4 -boot-info-table -o ~/Ubuntu-$ISO.iso
    dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The new ISO has been created correctly and has been saved in the home as ubuntu-12.04-$ISO-amd64.iso" 8 80
 dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Congratulation! You have completed  the Ubuntu Customization!" 8 80
 }

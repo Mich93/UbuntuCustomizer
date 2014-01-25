@@ -1,0 +1,2 @@
+echo ciao > function.log
+exit 0
