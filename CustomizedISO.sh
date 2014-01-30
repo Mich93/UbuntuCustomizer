@@ -4,7 +4,6 @@ choose=/tmp/answ
 
 #dialog that welcomes the user
 function welcome() {
-
 dialog --backtitle "Ubuntu 12.04 Customization" --title "Welcome" --clear --yesno "Welcome to the Ubuntu 12.04 customization process created by Stefano Mich. \nDo you want to procede with the customization?\n " 9 80
             case $? in
             0)
@@ -65,7 +64,7 @@ resumeFrom selectIso mountSystem
         
             
     fi
-
+writeForResume selectIso
 }
 
 #Procedure to mount the ubuntu system in a temporary folder
@@ -79,6 +78,7 @@ case $? in
     sudo mount -o loop $FILE /tmp/$fold
     check mountSystem
     dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "System mounted succesfully" 5 50
+    checkCtrlC mountSystem
    
     ;;
   1)
@@ -89,7 +89,7 @@ case $? in
     exitFrom mountSystem
     ;;
 esac
-
+writeForResume mountSystem
 }
 
 #Procedure that copies the mounted system in the home folder and organizes the directories
@@ -114,7 +114,7 @@ case $? in
        exitFrom copyFolders
        ;;
      esac 
-
+writeForResume copyFolders
 }
 function copySquash(){
     resumeFrom copySquash moveRoot
@@ -126,6 +126,7 @@ function copySquash(){
         0)
          sudo apt-get install rsync
          dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "rsync has been succesfully installed" 5 50
+         checkCtrlC copySquash
          ;;
         1)
          exitFrom copySquash
@@ -153,9 +154,10 @@ function copySquash(){
     sudo cp /etc/hosts ~/$fold/custom/etc
         
     dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Operation completed succesfully" 5 50
+    checkCtrlC copySquash
   
 
-  
+writeForResume copySquash  
 }
 #Procedure that moves the root to the custom folder
 function moveRoot(){
@@ -169,6 +171,7 @@ case $? in
         
     if [ $? == 0 ]
       then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Operation completed succesfully. Click OK to continue" 7 70
+      checkCtrlC moveRoot
     else
       dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Error" 5 50
       exit -1
@@ -183,8 +186,10 @@ case $? in
     exit -1
     ;;
 esac
-
+writeForResume moveRoot
 }
+
+#Procedure that enables all the possible repositories
 function enableRepo(){
 resumeFrom enableRepo customizeMenu
   dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "Enable repository" --yesno "The process will now enable universe and multiverse repository. \nDo you want to proceed?" 8 70
@@ -207,6 +212,7 @@ resumeFrom enableRepo customizeMenu
           echo "deb-src http://us.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse" | sudo tee -a ~/$fold/custom/etc/apt/sources.list
           sudo chroot ~/$fold/custom sudo apt-get update
           dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The repository has been enabled succesfully" 5 50
+          checkCtrlC enableRepo
          ;;
        1)
           exitMenu enableRepo
@@ -214,9 +220,9 @@ resumeFrom enableRepo customizeMenu
     
        esac
 dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Well done! We are now ready for customizing Ubuntu. \nClick Ok to continue with the customization" 8 80
-
+writeForResume enableRepo
 }
-
+#Procedure that removes the game packages
 function removeGame(){
 dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "Remove games" --yesno "The process will now check for the presence of games. \nDo you want to proceed?" 8 70
 case $? in
@@ -232,6 +238,7 @@ case $? in
           sudo chroot ~/$fold/custom sudo dpkg --get-selections | grep games
           if [ $? == 1 ]
             then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The game packages has been removed." 5 50
+            checkCtrlC removeGame
           else 
              dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "Error" --yesno "There has been an error while removing the games. \nDo you want to try again?" 8 70
             case $? in
@@ -252,6 +259,7 @@ case $? in
        esac
     else
       dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "There are no games installed. \nClick OK to go back to the menu." 7 70
+      checkCtrlC mountSystem
       customizeMenu
     fi
     ;;
@@ -266,7 +274,7 @@ case $? in
 esac
 customizeMenu
 }
-
+#Procedure that install eclipse
 function installEclipse(){
   
   dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "Install eclipse" --yesno "The process will now install eclipse. \nDo you want to proceed?" 8 70
@@ -298,6 +306,7 @@ function installEclipse(){
     
 customizeMenu
 }
+#Procedure that install Netbeans
 function installNetbeans(){
   
   dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "install Scribes" --yesno "The process will now install the scribes text editor. \nDo you want to proceed?" 8 70
@@ -307,6 +316,7 @@ function installNetbeans(){
         sudo chroot ~/$fold/custom sudo apt-get install netbeans
         if [ $? == 0 ]
             then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Netbeans has been installed succesfully" 5 50
+            checkCtrlC installNetbeans
         else
            dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while installing Netbeans. \nDo you want to try again?" 8 70
               case $? in
@@ -332,6 +342,7 @@ function installNetbeans(){
     
 customizeMenu
 }
+#Procedure that installs the flash plugin for Firefox
 function addFirefoxPlugin(){
   
   dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "install Firefox flash-plugin" --yesno "The process will now install the flash plugin. \nDo you want to proceed?" 8 70
@@ -341,6 +352,7 @@ function addFirefoxPlugin(){
         sudo chroot ~/$fold/custom sudo apt-get install flashplugin-nonfree
         if [ $? == 0 ]
             then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The flash plugin has been installed succesfully" 5 50 
+            checkCtrlC addFirefoxPlugin
         else
             dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while installing the flashplugin. \nDo you want to try again?" 8 70
             case $? in
@@ -363,6 +375,7 @@ function addFirefoxPlugin(){
     
 customizeMenu
 }
+#Procedure that let the user install a package
 function addPackage(){
   
   dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "install a package" --yesno "The process will now let you install a package. \nDo you want to proceed?" 8 70
@@ -388,7 +401,8 @@ function addPackage(){
         else 
            sudo chroot ~/$fold/custom sudo apt-get install $PACKAGE
            if [ $? == 0 ]
-              then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The package has been removed succesfully." 8 80
+              then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The package has been installed succesfully." 8 80
+              checkCtrlC addPackage
            else
               dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while installing the package. \nDo you want to try again?" 8 70
             case $? in
@@ -417,6 +431,7 @@ function addPackage(){
     
 customizeMenu
 }
+#Procedure that shows the packages to the user  and let him remove one
 function removePackage(){
   
   dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "remove a package" --yesno "The process will now let you remove a package. \nDo you want to proceed?" 8 70
@@ -435,6 +450,7 @@ function removePackage(){
             then sudo chroot ~/$fold/custom sudo apt-get remove --purge --assume-yes $rmPACKAGE
                 if [ $? == 0 ]
                    then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The package has been removed succesfully." 8 80
+                   checkCtrlC removePackage
                 else
                    dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while removing the package. \nDo you want to try again?" 8 70
                      case $? in
@@ -476,6 +492,7 @@ function removePackage(){
 sudo rm -f ~/$fold/custom/packages.txt    
 customizeMenu
 }
+#Procedure that let the user install wireshark
 function addWireshark(){
    
   dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "Wireshark" --yesno "The process will now install Wireshark. \nDo you want to proceed?" 8 70
@@ -485,6 +502,7 @@ function addWireshark(){
         sudo chroot ~/$fold/custom sudo apt-get install wireshark
         if [ $? == 0 ]
             then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Wireshark network toll has been installed succesfully." 8 80
+            checkCtrlC addWireshark
         else
             dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while installing wireshark. \nDo you want to try again?" 8 70
             case $? in
@@ -514,6 +532,7 @@ function addWireshark(){
     
 customizeMenu
 }
+#Procedure that let the user change the background
 function changeBack(){
   resumeFrom changeBack 
   dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "Change Background" --yesno "The process will now enable you to change the background. \nDo you want to proceed?" 8 70
@@ -525,6 +544,7 @@ function changeBack(){
             then   sudo chroot ~/$fold/custom sudo gconftool-2 --direct --config-source xml:readwrite:/etc/gconf/gconf.xml.defaults --set -t string /desktop/gnome/background$choose /usr/share/backgrounds$choose
                if [ $? == 0 ]
                   then dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The backgroung has been changed." 8 80
+                  checkCtrlC changeBack
                else
                       dialog --backtitle "Ubuntu 12.04 Customization" --stdout --title "" --yesno "There has been an error while changing the background. \nDo you want to try again?" 8 70
                    case $? in
@@ -555,9 +575,11 @@ function changeBack(){
        esac
 customizeMenu
 }
+#Procedure that cleans the system
 function clean() {
   resumeFrom clean
   dialog --backtitle "Ubuntu 12.04 Customization" --title "Clean" --clear --msgbox "The process will now clean the system" 6 60
+  checkCtrlC clean
   sudo chroot ~/$fold/custom sudo apt-get clean
   check clean
   sudo chroot ~/$fold/custom sudo rm -rf /tmp/*
@@ -569,11 +591,14 @@ function clean() {
   sudo chroot ~/$fold/custom sudo umount /sys/
   
   dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "System has been cleaned." 6 60
+  checkCtrlC clean
   setupIso
 }
+#Procedure that sets up the new ISO
 function setupIso() {
    resumeFrom setupIso
    dialog --backtitle "Ubuntu 12.04 Customization" --title "Setup ISO file" --clear --msgbox "The process will now setup the new customized ISO file" 7 70
+   checkCtrlC setupIso
    sudo chmod +w ~/$fold/cd/casper/filesystem.manifest
    check setupIso
    sudo chroot ~/$fold/custom sudo dpkg-query -W --showformat='${Package} ${Version}\n' > ~/$fold/cd/casper/filesystem.manifest
@@ -589,10 +614,11 @@ function setupIso() {
    cd ~/$fold/cd && sudo find -type f -print0 | sudo xargs -0 md5sum | grep -v isolinux/boot.cat | sudo tee md5sum.txt
    check setupIso
    dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The new ISO has been set up correctly. \nClick OK to  continue with the creation of the ISO" 7 70
+   checkCtrlC setupIso
   createIso
 }
 
-
+#Procedure that creates the final customized ISO file
 function createIso() {
    resumeFrom createIso
    dialog --backtitle "Ubuntu 12.04 Customization" --title "ISO creation" --clear --msgbox "The process will now let you create the new customized ISO file" 6 60
@@ -606,10 +632,16 @@ function createIso() {
             then ISO=$(< $choose)
         else exitFrom createIso
         fi
-        
-   cd ~/$fold/cd && sudo mkisofs -r -V "Ubuntu-$USER" -b isolinux/isolinux.bin -c isolinux/boot.cat -cache-inodes -J -l -no-emul-boot -boot-load-size 4 -boot-info-table -o ~/Ubuntu-$ISO.iso .
+   dialog --backtitle 'Ubuntu 12.04 Customization' --title "Save the ISO" --inputbox "Enter the path where you want to save the ISO.\nThe starting folder is the home, so leave it blank if you want to save the ISO in the home" 8 80 2> $choose
+        if [ $? == 0 ]
+            then ISOpath=$(< $choose)
+        else exitFrom createIso
+        fi
+   cd ~/$ISOpath     
+   cd ~/$fold/cd && sudo mkisofs -r -V "Ubuntu-$USER" -b isolinux/isolinux.bin -c isolinux/boot.cat -cache-inodes -J -l -no-emul-boot -boot-load-size 4 -boot-info-table -o ~/$ISO.iso .
     check createIso
-   dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The new ISO has been created correctly and has been saved in the home as ubuntu-12.04-$ISO-amd64.iso" 8 80
+   dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "The new ISO has been created correctly and has been saved in the home as $ISO-amd64.iso" 8 80
+   checkCtrlC createIso
 dialog --backtitle "Ubuntu 12.04 Customization" --title "Confirmation" --clear --msgbox "Congratulation! You have completed  the Ubuntu Customization!" 8 80
 }
 
@@ -621,14 +653,14 @@ function customizeMenu() {
         else exitFrom customizeMenu
         fi
      case $WHAT in
-       1) removeGame ;;
-       2) installEclipse ;;
+       1) changeBack;;
+       2) addPackage ;;
        3) installNetbeans ;;
        4) addFirefoxPlugin ;;
        5) addWireshark ;;
-       6) addPackage ;;
+       6) installEclipse ;;
        7) removePackage ;;
-       8) changeBack ;;
+       8) removeGame ;;
        9) clean ;; 
        *)  exitFrom customizeMenu ;;
        255)  exitFrom customizeMenu ;;
@@ -638,8 +670,7 @@ esac
 
 #Procedure to exit from any process whenever the user wants to 
 function exitFrom(){
-   if test $? -ne 0   
-         then 
+
           dialog --backtitle "Ubuntu 12.04 Customization" --title "ERROR" --clear --yesno "Do you really want to exit?" 6 60
             case $? in
             0)
@@ -655,8 +686,9 @@ function exitFrom(){
             exit -1
             ;;
             esac
-fi
+
 }
+#Procedure to exit from the customize menu
 function exitMenu(){
 if test $? -ne 0   
          then 
@@ -676,6 +708,7 @@ if test $? -ne 0
             esac
 fi
 }
+#Procedure that checks the correctness of the last operation done
 function check(){
          if [ $? == 0 ]
             then echo 
@@ -692,6 +725,17 @@ function check(){
              esac
           fi
 }
+#Procedure that manages to exit the programm when an ctrl+c has been pressed
+function checkCtrlC(){
+        
+        if test $? -ne 0   
+         then
+            
+            exitFrom $1 
+        
+          fi  
+}
+#Procedure that checks the correctness of the operation done in the Menu
 function checkMenu(){
          if [ $? == 0 ]
             then echo 
@@ -717,14 +761,24 @@ function resumeFrom() {
   fi
   
   grep $1 functionsLog.txt
-  if test $? -ne 0   
+  if test $? -eq 0   
      then 
-       log $1
-  else
        $2
+        
   fi 
 
 }
+#Procedure that writes the name of the function in the log
+function writeForResume() {
+    
+  grep $1 functionsLog.txt
+  if test $? -ne 0   
+     then 
+       log $1 
+  fi 
+
+}
+#Procedure that checks if the user has already started the customization.
 function checkResume() {
   cd ~
   ls | grep -q functionsLog.txt
@@ -747,7 +801,7 @@ function checkResume() {
 }
 
 
-
+#Procedure that writes the name of the function in the log
 function log(){
   echo "$1" >> functionsLog.txt
 }
